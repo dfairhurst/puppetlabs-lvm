@@ -35,6 +35,27 @@ Puppet::Type.newtype(:logical_volume) do
         raise ArgumentError , "#{value} is not a valid logical volume size"
       end
     end
+    def insync?(is)
+        lvm_size_units = { "K" => 1, "M" => 1024, "G" => 1048576, "T" => 1073741824, "P" => 1099511627776, "E" => 1125899906842624 }
+        lvm_size_units_match = lvm_size_units.keys().join('|')
+
+        if is =~ /(\d+\.{0,1}\d{0,2})(#{lvm_size_units_match})/i
+            current_size_bytes = $1.to_f
+            current_size_unit  = $2.upcase
+            current_size = current_size_bytes * lvm_size_units[current_size_unit]
+        end
+
+        if should =~ /(\d+\.{0,1}\d{0,2})(#{lvm_size_units_match})/i
+            new_size_bytes = $1.to_f
+            new_size_unit  = $2.upcase
+            new_size = new_size_bytes * lvm_size_units[new_size_unit]
+        end
+        if [:true, true, "true"].include?(@resource[:size_is_minsize])
+            new_size <= current_size
+        else
+            new_size == current_size
+        end
+    end
   end
 
   newparam(:extents) do
